@@ -1,0 +1,861 @@
+// REUSA - Esquema de Base de Datos
+// Prisma Schema para PostgreSQL
+// Version: 1.0.0 (MVP)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+}
+
+enum ProductCondition {
+  NEW_WITH_TAGS    // Nuevo con etiquetas
+  LIKE_NEW         // Como nuevo
+  GOOD             // Buen estado
+  ACCEPTABLE       // Aceptable
+}
+
+enum ProductStatus {
+  DRAFT            // Borrador (no publicado)
+  ACTIVE           // Activo y visible
+  RESERVED         // Reservado (en proceso de venta)
+  SOLD             // Vendido
+  TRADED           // Intercambiado
+  DELETED          // Eliminado por usuario
+  REMOVED          // Removido por moderacion
+}
+
+enum DeliveryOption {
+  PICKUP           // Retiro en persona
+  SHIPPING         // Envio
+  BOTH             // Ambos
+}
+
+enum TransactionType {
+  SALE             // Venta directa
+  TRADE            // Trueque
+  TRADE_WITH_CASH  // Trueque + diferencia en efectivo
+}
+
+enum TransactionStatus {
+  PENDING          // Pendiente de pago/acuerdo
+  PAID             // Pagado (dinero retenido)
+  SHIPPED          // Enviado
+  DELIVERED        // Entregado
+  COMPLETED        // Completado (dinero liberado)
+  CANCELLED        // Cancelado
+  DISPUTED         // En disputa
+  REFUNDED         // Reembolsado
+}
+
+enum PaymentMethod {
+  MERCADO_PAGO
+  STRIPE
+  CASH_ON_DELIVERY
+  CASH_IN_PERSON
+}
+
+enum MessageType {
+  TEXT             // Mensaje de texto
+  IMAGE            // Imagen
+  OFFER            // Oferta de precio
+  TRADE_PROPOSAL   // Propuesta de trueque
+  SYSTEM           // Mensaje del sistema
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  NEW_OFFER
+  TRADE_PROPOSAL
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  TRADE_ACCEPTED
+  TRADE_REJECTED
+  PRODUCT_SOLD
+  NEW_REVIEW
+  NEW_FAVORITE
+  SYSTEM
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE_CONTENT
+  FAKE_PRODUCT
+  SCAM
+  OFFENSIVE_BEHAVIOR
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COUNTERED
+  EXPIRED
+  CANCELLED
+}
+
+enum OfferType {
+  PRICE
+  TRADE
+  MIXED
+}
+
+// ============================================
+// USUARIOS
+// ============================================
+
+model User {
+  id                    String              @id @default(uuid())
+  email                 String              @unique
+  passwordHash          String?             // Null si usa OAuth
+
+  // Perfil
+  username              String              @unique
+  displayName           String
+  bio                   String?
+  avatarUrl             String?
+  phoneNumber           String?
+  phoneVerified         Boolean             @default(false)
+
+  // Ubicacion
+  locationLat           Float?
+  locationLng           Float?
+  city                  String?
+  state                 String?
+  country               String?
+
+  // Estado y verificacion
+  status                UserStatus          @default(ACTIVE)
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  identityVerifiedAt    DateTime?
+
+  // Online status
+  isOnline              Boolean             @default(false)
+  lastSeenAt            DateTime?
+
+  // Metricas
+  rating                Float               @default(0)
+  ratingAvg             Float               @default(0)
+  ratingCount           Int                 @default(0)
+  reviewCount           Int                 @default(0)
+  salesCount            Int                 @default(0)
+  purchasesCount        Int                 @default(0)
+  tradesCount           Int                 @default(0)
+
+  // Impacto ambiental (acumulado)
+  impactCO2Saved        Float               @default(0)  // en kg
+  impactWaterSaved      Float               @default(0)  // en litros
+  impactItemsReused     Int                 @default(0)
+  totalCo2Saved         Float               @default(0)  // alias
+  totalWaterSaved       Float               @default(0)  // alias
+  itemsRescued          Int                 @default(0)  // alias
+
+  // Banking
+  bankDetails           Json?
+
+  // Preferencias
+  interests             String[]            // Categorias de interes
+  notifyMessages        Boolean             @default(true)
+  notifyOffers          Boolean             @default(true)
+  notifyFavorites       Boolean             @default(false)
+  notifyPromos          Boolean             @default(false)
+
+  // Auth
+  lastLoginAt           DateTime?
+  emailVerified         Boolean             @default(false)
+  emailVerifiedAt       DateTime?
+
+  // Timestamps
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?
+
+  // Relaciones
+  products              Product[]           @relation("ProductSeller")
+  favorites             Favorite[]
+  reviewsGiven          Review[]            @relation("ReviewsGiven")
+  reviewsReceived       Review[]            @relation("ReviewsReceived")
+  conversationsAsBuyer  Conversation[]      @relation("ConversationBuyer")
+  conversationsAsSeller Conversation[]      @relation("ConversationSeller")
+  messagesSent          Message[]
+  transactionsAsBuyer   Transaction[]       @relation("TransactionBuyer")
+  transactionsAsSeller  Transaction[]       @relation("TransactionSeller")
+  notifications         Notification[]
+  reportsCreated        Report[]            @relation("ReportCreator")
+  reportsReceived       Report[]            @relation("ReportTarget")
+  authProviders         AuthProvider[]
+  badges                UserBadge[]
+  devices               UserDevice[]
+  offersBuyer           Offer[]             @relation("OfferBuyer")
+  offersSeller          Offer[]             @relation("OfferSeller")
+  passwordResetTokens   PasswordResetToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([city, country])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuthProvider {
+  id            String    @id @default(uuid())
+  userId        String
+  provider      String    // google, apple, facebook
+  providerId    String    // ID del usuario en el provider
+  accessToken   String?
+  refreshToken  String?
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid())
+  userId      String
+  token       String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+model UserDevice {
+  id            String    @id @default(uuid())
+  userId        String
+  deviceToken   String    // FCM token
+  token         String?   // Alias para servicios (mismo que deviceToken)
+  deviceType    String    // ios, android
+  platform      String?   // Alias para servicios (mismo que deviceType)
+  deviceModel   String?
+  appVersion    String?
+  isActive      Boolean   @default(true)
+  lastActiveAt  DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceToken])
+  @@index([userId])
+  @@index([deviceToken])
+}
+
+// ============================================
+// CATEGORIAS
+// ============================================
+
+model Category {
+  id            String      @id @default(uuid())
+  name          String
+  slug          String      @unique
+  icon          String?     // Nombre del icono o URL
+  order         Int         @default(0)
+  isActive      Boolean     @default(true)
+
+  // Jerarquia
+  parentId      String?
+  parent        Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children      Category[]  @relation("CategoryHierarchy")
+
+  // Impacto ambiental (factores de calculo)
+  avgWeightKg       Float   @default(0.5)
+  co2FactorPerKg    Float   @default(2.0)    // kg CO2 por kg de producto
+  waterFactorPerKg  Float   @default(1000)   // litros por kg de producto
+  co2Footprint      Float   @default(5.0)    // alias para servicios
+  waterFootprint    Float   @default(2000)   // alias para servicios
+
+  // Timestamps
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relaciones
+  products      Product[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive, order])
+}
+
+// ============================================
+// PRODUCTOS
+// ============================================
+
+model Product {
+  id                String            @id @default(uuid())
+  sellerId          String
+  categoryId        String
+
+  // Informacion basica
+  title             String
+  description       String
+  condition         ProductCondition
+
+  // Precio y trueque
+  price             Float?            // Null si solo trueque
+  acceptsTrade      Boolean           @default(false)
+  tradePreferences  String?           // Que busca a cambio
+
+  // Ubicacion
+  locationLat       Float?
+  locationLng       Float?
+  city              String?
+  state             String?
+  country           String?
+
+  // Entrega
+  deliveryOption    DeliveryOption    @default(BOTH)
+  shippingCost      Float?            // Costo estimado de envio
+
+  // Atributos adicionales (flexible por categoria)
+  attributes        Json?             // { size: "M", color: "Negro", brand: "Nike" }
+
+  // Estado
+  status            ProductStatus     @default(ACTIVE)
+
+  // Metricas
+  viewsCount        Int               @default(0)
+  favoritesCount    Int               @default(0)
+  messagesCount     Int               @default(0)
+
+  // Impacto calculado
+  estimatedWeightKg Float?
+  impactCO2         Float?            // kg CO2 que se evita al reusar
+  impactWater       Float?            // litros de agua
+
+  // Moderacion
+  isApproved        Boolean           @default(true)
+  moderatedAt       DateTime?
+  moderationNotes   String?
+
+  // Timestamps
+  publishedAt       DateTime?
+  soldAt            DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  // Relaciones
+  seller            User              @relation("ProductSeller", fields: [sellerId], references: [id])
+  category          Category          @relation(fields: [categoryId], references: [id])
+  images            ProductImage[]
+  favorites         Favorite[]
+  conversations     Conversation[]
+  transactions      Transaction[]
+  reports           Report[]
+  offers            Offer[]
+  tradeOffers       Offer[]           @relation("TradeProducts")
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([price])
+  @@index([city, country])
+  @@index([createdAt])
+  @@index([acceptsTrade])
+
+  // Indice para busqueda full-text (requiere extension pg_trgm)
+  // @@index([title, description], type: GIN)
+}
+
+model ProductImage {
+  id          String    @id @default(uuid())
+  productId   String
+  url         String
+  thumbnailUrl String?
+  order       Int       @default(0)
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
+  createdAt   DateTime  @default(now())
+
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([order])
+}
+
+// ============================================
+// FAVORITOS
+// ============================================
+
+model Favorite {
+  id          String    @id @default(uuid())
+  userId      String
+  productId   String
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// ============================================
+// CONVERSACIONES Y MENSAJES
+// ============================================
+
+model Conversation {
+  id              String      @id @default(uuid())
+  productId       String
+  buyerId         String      // Usuario interesado
+  sellerId        String      // Dueno del producto
+
+  // Estado
+  isActive        Boolean     @default(true)
+  lastMessageAt   DateTime?
+
+  // Contadores
+  buyerUnreadCount  Int       @default(0)
+  sellerUnreadCount Int       @default(0)
+
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relaciones
+  product         Product     @relation(fields: [productId], references: [id])
+  buyer           User        @relation("ConversationBuyer", fields: [buyerId], references: [id])
+  seller          User        @relation("ConversationSeller", fields: [sellerId], references: [id])
+  messages        Message[]
+
+  @@unique([productId, buyerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id              String        @id @default(uuid())
+  conversationId  String
+  senderId        String
+
+  // Contenido
+  type            MessageType   @default(TEXT)
+  content         String?       // Texto del mensaje
+  imageUrl        String?       // URL si es imagen
+
+  // Metadata para ofertas y trueques
+  metadata        Json?
+  // Para OFFER: { amount: 2000, status: "pending"|"accepted"|"rejected" }
+  // Para TRADE_PROPOSAL: {
+  //   offeredProductId: "...",
+  //   cashDifference: 500,
+  //   status: "pending"|"accepted"|"rejected"
+  // }
+
+  // Estado
+  readAt          DateTime?
+
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  // Relaciones
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User          @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// ============================================
+// TRANSACCIONES
+// ============================================
+
+model Transaction {
+  id                  String              @id @default(uuid())
+
+  // Partes
+  productId           String
+  buyerId             String
+  sellerId            String
+
+  // Tipo y estado
+  type                TransactionType
+  status              TransactionStatus   @default(PENDING)
+
+  // Montos
+  productPrice        Float?              // Precio original del producto
+  agreedPrice         Float?              // Precio acordado (puede ser diferente)
+  amount              Float?              // Alias para servicios
+  shippingCost        Float?
+  serviceFee          Float?              // Comision de Reusa
+  totalAmount         Float?              // Total pagado por comprador
+  sellerPayout        Float?              // Monto que recibe vendedor
+
+  // Para trueques
+  tradeProductId      String?             // Producto ofrecido en trueque
+  tradeCashDifference Float?              // Diferencia en efectivo
+
+  // Oferta relacionada
+  offerId             String?
+  conversationId      String?
+
+  // Pago
+  paymentMethod       PaymentMethod?
+  paymentId           String?             // ID externo (Mercado Pago, Stripe)
+  paymentPreferenceId String?             // Preference ID de MercadoPago
+  paymentStatus       String?             // Estado del pago
+  paymentStatusDetail String?             // Detalle del estado
+  paymentData         Json?               // Data adicional del pago
+  paidAt              DateTime?
+
+  // Envio
+  deliveryOption      DeliveryOption
+  deliveryMethod      String?             // pickup | shipping
+  shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?             // Region/Estado
+  shippingPostalCode  String?
+  shippingCountyCode  String?             // Codigo comuna Chilexpress
+  shippingNotes       String?
+  shippingCarrier     String?             // Chilexpress, Andreani, etc
+  trackingNumber      String?
+  trackingUrl         String?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+
+  // Chilexpress
+  shippingOrderNumber String?             // Numero OT Chilexpress
+  shippingBarcode     String?             // Codigo de barras
+  shippingLabelUrl    String?             // URL de etiqueta guardada
+  shippingLabelData   String?             // Etiqueta en base64
+  shippingLabelType   String?             // IMAGE o EPL
+
+  // Confirmaciones
+  buyerConfirmedAt    DateTime?
+  sellerConfirmedAt   DateTime?
+
+  // Disputa
+  disputeReason       String?
+  disputeOpenedAt     DateTime?
+  disputeResolvedAt   DateTime?
+  disputeResolution   String?
+
+  // Impacto (calculado al completar)
+  impactCO2           Float?
+  impactWater         Float?
+
+  // Timestamps
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relaciones
+  product             Product             @relation(fields: [productId], references: [id])
+  buyer               User                @relation("TransactionBuyer", fields: [buyerId], references: [id])
+  seller              User                @relation("TransactionSeller", fields: [sellerId], references: [id])
+  reviews             Review[]
+  offer               Offer?              @relation(fields: [offerId], references: [id])
+
+  @@index([productId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([offerId])
+}
+
+// ============================================
+// REVIEWS / VALORACIONES
+// ============================================
+
+model Review {
+  id              String        @id @default(uuid())
+  transactionId   String
+  reviewerId      String        // Quien deja la review
+  reviewedId      String        // Quien recibe la review
+  reviewedUserId  String?       // Alias para servicios (mismo que reviewedId)
+
+  // Valoracion
+  rating          Int           // 1-5
+  comment         String?
+  tags            String[]      // Tags de la review
+
+  // Aspectos (opcional)
+  accurateDescription Boolean?   // Producto coincide con descripcion
+  friendlySeller      Boolean?   // Vendedor amable
+  fastResponses       Boolean?   // Respuestas rapidas
+
+  // Estado
+  isPublic        Boolean       @default(true)
+
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relaciones
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+  reviewer        User          @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewed        User          @relation("ReviewsReceived", fields: [reviewedId], references: [id])
+
+  @@unique([transactionId, reviewerId])
+  @@index([reviewedId])
+  @@index([reviewedUserId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// ============================================
+// NOTIFICACIONES
+// ============================================
+
+model Notification {
+  id            String            @id @default(uuid())
+  userId        String
+
+  // Contenido
+  type          NotificationType
+  title         String
+  body          String
+  imageUrl      String?
+
+  // Referencia (a que apunta la notificacion)
+  referenceType String?           // product, conversation, transaction, user
+  referenceId   String?
+
+  // Estado
+  readAt        DateTime?
+
+  // Push
+  pushSentAt    DateTime?
+  pushError     String?
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+
+  // Relaciones
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+// ============================================
+// BADGES / INSIGNIAS
+// ============================================
+
+model Badge {
+  id            String        @id @default(uuid())
+  code          String        @unique  // fast_responder, super_seller, etc
+  name          String
+  description   String
+  icon          String
+  color         String?
+
+  // Requisitos (configurables)
+  requirements  Json          // { minSales: 10, minRating: 4.8 }
+
+  // Estado
+  isActive      Boolean       @default(true)
+
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relaciones
+  users         UserBadge[]
+}
+
+model UserBadge {
+  id          String    @id @default(uuid())
+  userId      String
+  badgeId     String
+  earnedAt    DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge     @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// ============================================
+// REPORTES / MODERACION
+// ============================================
+
+model Report {
+  id              String          @id @default(uuid())
+
+  // Quien reporta
+  reporterId      String
+
+  // Que se reporta
+  targetType      String          // user, product, message, review
+  targetId        String?         // ID generico del target
+  targetUserId    String?
+  targetProductId String?
+
+  // Detalles
+  reason          ReportReason
+  description     String?
+  evidence        String[]        // URLs de capturas, etc
+
+  // Estado
+  status          ReportStatus    @default(PENDING)
+
+  // Moderacion
+  moderatorNotes  String?
+  resolvedAt      DateTime?
+  actionTaken     String?         // warning, suspension, removal, etc
+
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relaciones
+  reporter        User            @relation("ReportCreator", fields: [reporterId], references: [id])
+  targetUser      User?           @relation("ReportTarget", fields: [targetUserId], references: [id])
+  targetProduct   Product?        @relation(fields: [targetProductId], references: [id])
+
+  @@index([reporterId])
+  @@index([targetUserId])
+  @@index([targetId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// OFERTAS
+// ============================================
+
+model Offer {
+  id                String        @id @default(uuid())
+
+  // Partes
+  productId         String
+  buyerId           String
+  sellerId          String
+  conversationId    String
+
+  // Tipo y estado
+  type              OfferType
+  status            OfferStatus   @default(PENDING)
+
+  // Montos
+  amount            Float?        // Para ofertas de precio
+  cashDifference    Float?        // Para trueques mixtos
+
+  // Productos para trueque
+  tradeProductIds   String[]      // IDs de productos ofrecidos en trueque
+
+  // Mensaje
+  message           String?
+  rejectionReason   String?
+
+  // Contra-oferta
+  parentOfferId     String?
+
+  // Fechas
+  expiresAt         DateTime
+  respondedAt       DateTime?
+
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relaciones
+  product           Product       @relation(fields: [productId], references: [id])
+  buyer             User          @relation("OfferBuyer", fields: [buyerId], references: [id])
+  seller            User          @relation("OfferSeller", fields: [sellerId], references: [id])
+  tradeProducts     Product[]     @relation("TradeProducts")
+  parentOffer       Offer?        @relation("OfferCounters", fields: [parentOfferId], references: [id])
+  counterOffers     Offer[]       @relation("OfferCounters")
+  transactions      Transaction[]
+
+  @@index([productId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// CONFIGURACION GLOBAL
+// ============================================
+
+model AppConfig {
+  id            String    @id @default(uuid())
+  key           String    @unique
+  value         Json
+  description   String?
+  updatedAt     DateTime  @updatedAt
+}
+
+// ============================================
+// METRICAS GLOBALES
+// ============================================
+
+model GlobalMetrics {
+  id                    String    @id @default(uuid())
+  date                  DateTime  @unique @db.Date
+
+  // Usuarios
+  totalUsers            Int       @default(0)
+  newUsers              Int       @default(0)
+  activeUsers           Int       @default(0)
+
+  // Productos
+  totalProducts         Int       @default(0)
+  newProducts           Int       @default(0)
+  activeProducts        Int       @default(0)
+
+  // Transacciones
+  totalTransactions     Int       @default(0)
+  completedTransactions Int       @default(0)
+  totalSalesVolume      Float     @default(0)
+  totalTradesCount      Int       @default(0)
+
+  // Impacto
+  totalCO2Saved         Float     @default(0)
+  totalWaterSaved       Float     @default(0)
+  totalItemsReused      Int       @default(0)
+
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([date])
+}

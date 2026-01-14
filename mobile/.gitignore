@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native build folders
+android/
+ios/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Credentials (NEVER commit these)
+google-services.json
+GoogleService-Info.plist
+play-store-credentials.json
+*.keystore
+*.jks
+*.p12
+*.key
+*.mobileprovision
+*.provisionprofile
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# EAS
+.easignore

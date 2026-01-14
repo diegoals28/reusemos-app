@@ -1,0 +1,25 @@
+// ============================================
+// REUSA - Uploads Module
+// ============================================
+
+import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { UploadsController } from './uploads.controller';
+import { CloudinaryService } from './cloudinary.service';
+
+@Module({
+  imports: [
+    MulterModule.register({
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 10,
+      },
+    }),
+  ],
+  controllers: [UploadsController],
+  providers: [CloudinaryService],
+  exports: [CloudinaryService],
+})
+export class UploadsModule {}

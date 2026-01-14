@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reusa - Preview de Assets</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 40px;
+    }
+    h1 {
+      color: #2D9B6E;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 40px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .card h3 {
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .card p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 12px;
+    }
+    .preview.dark {
+      background: #333;
+    }
+    .preview img {
+      max-width: 100%;
+      height: auto;
+    }
+    .icon-preview img {
+      width: 120px;
+      height: 120px;
+    }
+    .splash-preview {
+      max-height: 400px;
+      overflow: hidden;
+    }
+    .splash-preview img {
+      width: auto;
+      max-height: 380px;
+    }
+    .sizes {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .size-item {
+      text-align: center;
+    }
+    .size-item span {
+      display: block;
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .colors {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+    }
+    .color {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <h1>Reusa - Assets Preview</h1>
+  <p class="subtitle">Vista previa de los iconos y splash screen generados</p>
+
+  <div class="grid">
+    <!-- App Icon -->
+    <div class="card">
+      <h3>App Icon</h3>
+      <p>Icono principal de la app (1024x1024)</p>
+      <div class="preview icon-preview">
+        <img src="icon.png" alt="App Icon">
+      </div>
+      <div class="sizes">
+        <div class="size-item">
+          <img src="icon.png" alt="" style="width:64px;height:64px;">
+          <span>64px</span>
+        </div>
+        <div class="size-item">
+          <img src="icon.png" alt="" style="width:48px;height:48px;">
+          <span>48px</span>
+        </div>
+        <div class="size-item">
+          <img src="icon.png" alt="" style="width:32px;height:32px;">
+          <span>32px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adaptive Icon -->
+    <div class="card">
+      <h3>Adaptive Icon (Android)</h3>
+      <p>Foreground del icono adaptativo (1024x1024)</p>
+      <div class="preview dark icon-preview">
+        <img src="adaptive-icon.png" alt="Adaptive Icon">
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:#888;">
+        El fondo verde (#2D9B6E) se aplica automáticamente en Android
+      </p>
+    </div>
+
+    <!-- Splash Screen -->
+    <div class="card">
+      <h3>Splash Screen</h3>
+      <p>Pantalla de carga (1284x2778)</p>
+      <div class="preview splash-preview">
+        <img src="splash.png" alt="Splash Screen">
+      </div>
+    </div>
+
+    <!-- Notification Icon -->
+    <div class="card">
+      <h3>Notification Icon</h3>
+      <p>Icono de notificaciones Android (96x96)</p>
+      <div class="preview dark" style="padding:40px;">
+        <img src="notification-icon.png" alt="Notification Icon" style="width:48px;height:48px;">
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:#888;">
+        Monocromático blanco, requerido por Android
+      </p>
+    </div>
+
+    <!-- Favicon -->
+    <div class="card">
+      <h3>Favicon</h3>
+      <p>Icono para web (48x48)</p>
+      <div class="preview icon-preview">
+        <img src="favicon.png" alt="Favicon" style="width:48px;height:48px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Brand Colors -->
+  <div class="colors">
+    <div class="color" style="background:#2D9B6E;">#2D9B6E<br>Primary</div>
+    <div class="color" style="background:#1E7A53;">#1E7A53<br>Dark</div>
+    <div class="color" style="background:#4DB88A;">#4DB88A<br>Light</div>
+    <div class="color" style="background:#FF6B4A;">#FF6B4A<br>Accent</div>
+    <div class="color" style="background:#1A1A1A;">#1A1A1A<br>Text</div>
+  </div>
+
+  <p style="margin-top:40px;color:#999;font-size:14px;text-align:center;">
+    Generado con generate-assets.js • Reusa © 2024
+  </p>
+</body>
+</html>

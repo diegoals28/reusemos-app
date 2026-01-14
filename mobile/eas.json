@@ -1,0 +1,61 @@
+{
+  "cli": {
+    "version": ">= 7.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.50.241:3000/api",
+        "EXPO_PUBLIC_WS_URL": "http://192.168.50.241:3000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.reusa.app/api",
+        "EXPO_PUBLIC_WS_URL": "https://api.reusa.app"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.reusa.app/api",
+        "EXPO_PUBLIC_WS_URL": "https://api.reusa.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "tu-apple-id@email.com",
+        "ascAppId": "TU_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "TU_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./play-store-credentials.json",
+        "track": "internal"
+      }
+    }
+  }
+}
