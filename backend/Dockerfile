@@ -5,8 +5,8 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+# Install build dependencies for native modules (bcrypt, etc) and OpenSSL for Prisma
+RUN apk add --no-cache openssl python3 make g++
 
 WORKDIR /app
 
@@ -23,10 +23,13 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Prune dev dependencies to keep only production ones
+RUN npm prune --production
+
 # Stage 2: Production
 FROM node:20-alpine AS production
 
-# Install OpenSSL for Prisma
+# Install OpenSSL for Prisma (no need for build tools as we copy pre-built modules)
 RUN apk add --no-cache openssl
 
 WORKDIR /app
@@ -38,12 +41,11 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Copy ALL node_modules from builder (includes pre-built native modules like bcrypt)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 
 # Set ownership
