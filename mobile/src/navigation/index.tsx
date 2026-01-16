@@ -10,6 +10,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { COLORS, ROUTES } from '@/constants';
+import { usePushNotifications } from '@/services/pushNotifications';
 
 // Auth Screens
 import WelcomeScreen from '@/screens/auth/WelcomeScreen';
@@ -236,6 +237,12 @@ function EmptyComponent() {
   return <View />;
 }
 
+// Push notifications manager - must be inside NavigationContainer
+function PushNotificationsHandler() {
+  usePushNotifications();
+  return null;
+}
+
 // ============================================
 // Deep Linking Configuration
 // ============================================
@@ -297,6 +304,8 @@ export function Navigation() {
 
   return (
     <NavigationContainer linking={linking}>
+      {/* Push notifications handler - must be inside NavigationContainer */}
+      {isAuthenticated && <PushNotificationsHandler />}
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

@@ -9,7 +9,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigation } from '@/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { usePushNotifications } from '@/services/pushNotifications';
 import { StyleSheet } from 'react-native';
 
 // Create Query Client
@@ -22,16 +21,8 @@ const queryClient = new QueryClient({
   },
 });
 
-function PushNotificationsManager() {
-  // This hook handles push notification registration and listeners
-  // It internally checks for Device.isDevice and skips setup on emulators
-  usePushNotifications();
-  return null;
-}
-
 function AppContent() {
   const setLoading = useAuthStore((state) => state.setLoading);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     // Simulate auth check - in real app this would check stored tokens
@@ -44,12 +35,7 @@ function AppContent() {
     checkAuth();
   }, [setLoading]);
 
-  return (
-    <>
-      {isAuthenticated && <PushNotificationsManager />}
-      <Navigation />
-    </>
-  );
+  return <Navigation />;
 }
 
 export default function App() {

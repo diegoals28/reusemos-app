@@ -2,12 +2,12 @@
 // REUSA - Constants
 // ============================================
 
-// API
-// Para emulador Android usa: 10.0.2.2
-// Para dispositivo físico usa: tu IP local (192.168.x.x)
-const LOCAL_IP = '10.0.2.2'; // Emulador Android (usa tu IP local para dispositivo físico)
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || `http://${LOCAL_IP}:3000/api`;
-export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || `http://${LOCAL_IP}:3000`;
+// API Configuration
+const PRODUCTION_API = 'https://reusemos-app-production.up.railway.app/api';
+const PRODUCTION_WS = 'https://reusemos-app-production.up.railway.app';
+
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || PRODUCTION_API;
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || PRODUCTION_WS;
 
 // App Info
 export const APP_NAME = 'Reusemos';
