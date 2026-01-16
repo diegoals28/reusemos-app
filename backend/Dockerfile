@@ -1,16 +1,13 @@
 # ============================================
 # REUSA Backend - Production Dockerfile
 # ============================================
-# Build version: 2
 
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
-ENV NODE_ENV=production
-
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (including devDependencies for build)
 COPY package*.json ./
 RUN npm ci
 
@@ -46,6 +43,9 @@ RUN chown -R nestjs:nodejs /app
 
 # Switch to non-root user
 USER nestjs
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000
