@@ -28,7 +28,7 @@ const DEV_SKIP_AUTH = false;
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 60000, // 60 seconds for Railway cold starts
   headers: {
     'Content-Type': 'application/json',
   },

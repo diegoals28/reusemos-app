@@ -38,12 +38,13 @@
       "package": "com.reusemos.app",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
       ],
       "usesCleartextTraffic": true
     },
@@ -74,11 +75,8 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "ee6e2de1-be6b-4b08-afe9-6d68c7e27bf4"
+        "projectId": "2032308a-eb02-4859-97e4-b71c45afc531"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/ee6e2de1-be6b-4b08-afe9-6d68c7e27bf4"
     },
     "runtimeVersion": "1.0.0"
   }
