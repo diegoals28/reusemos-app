@@ -79,6 +79,18 @@ export class UsersService {
         favorites: user._count.favorites,
         reviews: user._count.reviewsReceived,
       },
+      environmentalImpact: {
+        co2Saved: user.impactCO2Saved,
+        waterSaved: user.impactWaterSaved,
+        itemsReused: user.impactItemsReused,
+      },
+      location: {
+        lat: user.locationLat,
+        lng: user.locationLng,
+        city: user.city,
+        state: user.state,
+        country: user.country,
+      },
     };
   }
 

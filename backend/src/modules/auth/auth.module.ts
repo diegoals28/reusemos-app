@@ -13,6 +13,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AppleStrategy } from './strategies/apple.strategy';
 import { UsersModule } from '../users/users.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from '../users/users.module';
       }),
     }),
     UsersModule,
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, AppleStrategy],

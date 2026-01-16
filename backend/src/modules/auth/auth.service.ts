@@ -17,6 +17,7 @@ import * as jwt from 'jsonwebtoken';
 
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -27,6 +28,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {}
 
   private googleClient = new OAuth2Client(
@@ -66,8 +68,26 @@ export class AuthService {
         username: dto.username.toLowerCase(),
         displayName: dto.displayName,
         passwordHash,
+        emailVerified: false,
       },
     });
+
+    // Create email verification token
+    const verificationToken = uuidv4();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      },
+    });
+
+    // Send verification email (async, don't wait)
+    this.emailService.sendVerificationEmail(
+      user.email,
+      verificationToken,
+      user.displayName,
+    ).catch(err => console.error('Failed to send verification email:', err));
 
     // Generate tokens
     const tokens = await this.generateTokens(user.id);
@@ -400,6 +420,95 @@ export class AuthService {
     ]);
 
     return { message: 'Password has been reset successfully' };
+  }
+
+  // ============================================
+  // Email Verification
+  // ============================================
+
+  async verifyEmail(token: string) {
+    const verificationToken = await this.prisma.emailVerificationToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!verificationToken) {
+      throw new BadRequestException('Invalid verification token');
+    }
+
+    if (verificationToken.usedAt) {
+      throw new BadRequestException('Token has already been used');
+    }
+
+    if (verificationToken.expiresAt < new Date()) {
+      throw new BadRequestException('Verification token has expired');
+    }
+
+    if (verificationToken.user.emailVerified) {
+      return { message: 'Email is already verified' };
+    }
+
+    // Update user and mark token as used
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: verificationToken.userId },
+        data: {
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+        },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: verificationToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    // Send welcome email (async)
+    this.emailService.sendWelcomeEmail(
+      verificationToken.user.email,
+      verificationToken.user.displayName,
+    ).catch(err => console.error('Failed to send welcome email:', err));
+
+    return { message: 'Email verified successfully' };
+  }
+
+  async resendVerificationEmail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Invalidate existing tokens
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    // Create new token
+    const verificationToken = uuidv4();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      verificationToken,
+      user.displayName,
+    );
+
+    return { message: 'Verification email sent' };
   }
 
   // ============================================

@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 
 // Mock bcrypt
 jest.mock('bcrypt');
@@ -15,6 +16,7 @@ describe('AuthService', () => {
   let prismaService: PrismaService;
   let jwtService: JwtService;
   let usersService: UsersService;
+  let emailService: EmailService;
 
   const mockPrismaService = {
     user: {
@@ -31,6 +33,12 @@ describe('AuthService', () => {
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+    },
+    emailVerificationToken: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      deleteMany: jest.fn(),
     },
     userDevice: {
       updateMany: jest.fn(),
@@ -58,6 +66,12 @@ describe('AuthService', () => {
     findById: jest.fn(),
   };
 
+  const mockEmailService = {
+    sendVerificationEmail: jest.fn(),
+    sendWelcomeEmail: jest.fn(),
+    sendPasswordResetEmail: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +80,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: UsersService, useValue: mockUsersService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 
@@ -73,6 +88,7 @@ describe('AuthService', () => {
     prismaService = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
     usersService = module.get<UsersService>(UsersService);
+    emailService = module.get<EmailService>(EmailService);
 
     jest.clearAllMocks();
   });
@@ -92,12 +108,19 @@ describe('AuthService', () => {
         username: 'testuser',
         displayName: 'Test User',
         passwordHash: 'hashed-password',
+        emailVerified: false,
       };
 
       mockPrismaService.user.findUnique.mockResolvedValueOnce(null); // email check
       mockPrismaService.user.findUnique.mockResolvedValueOnce(null); // username check
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
       mockPrismaService.user.create.mockResolvedValue(mockUser);
+      mockPrismaService.emailVerificationToken.create.mockResolvedValue({
+        id: 'token-id',
+        token: 'verification-token',
+        userId: 'user-id',
+      });
+      mockEmailService.sendVerificationEmail.mockResolvedValue(undefined);
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
@@ -108,6 +131,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('token', 'access-token');
       expect(result).toHaveProperty('refreshToken', 'refresh-token');
       expect(result.user).not.toHaveProperty('passwordHash');
+      expect(mockPrismaService.emailVerificationToken.create).toHaveBeenCalled();
     });
 
     it('should throw ConflictException if email already exists', async () => {

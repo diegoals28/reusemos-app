@@ -104,8 +104,8 @@ export default function ProfileScreen() {
       value: profile?.salesCount || 0,
     },
     {
-      label: 'CO₂ evitado',
-      value: `${profile?.environmentalImpact?.co2Saved?.toFixed(1) || 0} kg`,
+      label: 'Intercambios',
+      value: profile?.tradesCount || 0,
     },
   ];
 
@@ -219,34 +219,35 @@ export default function ProfileScreen() {
         </View>
 
         {/* Environmental Impact */}
-        {profile?.environmentalImpact && (
-          <View style={styles.impactCard}>
-            <View style={styles.impactHeader}>
-              <Ionicons name="leaf" size={24} color={COLORS.primary} />
-              <Text style={styles.impactTitle}>Tu impacto ambiental</Text>
+        <View style={styles.impactCard}>
+          <View style={styles.impactHeader}>
+            <Ionicons name="leaf" size={24} color={COLORS.primary} />
+            <Text style={styles.impactTitle}>Tu impacto ambiental</Text>
+          </View>
+          <View style={styles.impactStats}>
+            <View style={styles.impactStat}>
+              <Text style={styles.impactValue}>
+                {(profile?.environmentalImpact?.co2Saved || 0).toFixed(1)} kg
+              </Text>
+              <Text style={styles.impactLabel}>CO₂ evitado</Text>
             </View>
-            <View style={styles.impactStats}>
-              <View style={styles.impactStat}>
-                <Text style={styles.impactValue}>
-                  {profile.environmentalImpact.co2Saved?.toFixed(1) || 0} kg
-                </Text>
-                <Text style={styles.impactLabel}>CO₂ evitado</Text>
-              </View>
-              <View style={styles.impactStat}>
-                <Text style={styles.impactValue}>
-                  {profile.environmentalImpact.waterSaved?.toFixed(0) || 0} L
-                </Text>
-                <Text style={styles.impactLabel}>Agua ahorrada</Text>
-              </View>
-              <View style={styles.impactStat}>
-                <Text style={styles.impactValue}>
-                  {profile.environmentalImpact?.itemsReused || 0}
-                </Text>
-                <Text style={styles.impactLabel}>Items rescatados</Text>
-              </View>
+            <View style={styles.impactStat}>
+              <Text style={styles.impactValue}>
+                {(profile?.environmentalImpact?.waterSaved || 0).toFixed(0)} L
+              </Text>
+              <Text style={styles.impactLabel}>Agua ahorrada</Text>
+            </View>
+            <View style={styles.impactStat}>
+              <Text style={styles.impactValue}>
+                {profile?.environmentalImpact?.itemsReused || 0}
+              </Text>
+              <Text style={styles.impactLabel}>Items rescatados</Text>
             </View>
           </View>
-        )}
+          <Text style={styles.impactDescription}>
+            Cada producto que reusas ayuda al planeta
+          </Text>
+        </View>
 
         {/* My Products */}
         {myProducts?.data && myProducts.data.length > 0 && (
@@ -537,6 +538,13 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  impactDescription: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.md,
+    fontStyle: 'italic',
   },
   section: {
     marginTop: SPACING.lg,

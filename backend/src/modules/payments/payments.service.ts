@@ -11,7 +11,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsGateway } from '../../gateways/notifications.gateway';
-import { TransactionStatus, PaymentMethod } from '@prisma/client';
+import { PushService } from '../notifications/push.service';
+import { TransactionStatus, PaymentMethod, ProductStatus } from '@prisma/client';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
 interface PaymentWebhookData {
@@ -36,6 +37,7 @@ export class PaymentsService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly pushService: PushService,
   ) {
     this.accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN') || '';
     this.webhookSecret = this.configService.get<string>('MERCADOPAGO_WEBHOOK_SECRET') || '';
@@ -177,6 +179,7 @@ export class PaymentsService {
 
     // Update transaction based on payment status
     if (payment.status === 'approved') {
+      // Update transaction to PAID
       await this.prisma.transaction.update({
         where: { id: transactionId },
         data: {
@@ -186,7 +189,42 @@ export class PaymentsService {
         },
       });
 
-      // Notify seller
+      // Mark product as SOLD
+      await this.prisma.product.update({
+        where: { id: transaction.productId },
+        data: { status: ProductStatus.SOLD },
+      });
+
+      this.logger.log(`Product ${transaction.productId} marked as SOLD`);
+
+      // Update environmental impact for buyer (who is reusing the product)
+      const product = transaction.product;
+      if (product.impactCO2 || product.impactWater) {
+        await this.prisma.user.update({
+          where: { id: transaction.buyerId },
+          data: {
+            impactCO2Saved: { increment: product.impactCO2 || 0 },
+            impactWaterSaved: { increment: product.impactWater || 0 },
+            impactItemsReused: { increment: 1 },
+          },
+        });
+
+        // Also update seller's stats (they helped the environment by selling instead of throwing away)
+        await this.prisma.user.update({
+          where: { id: transaction.sellerId },
+          data: {
+            impactCO2Saved: { increment: product.impactCO2 || 0 },
+            impactWaterSaved: { increment: product.impactWater || 0 },
+            impactItemsReused: { increment: 1 },
+          },
+        });
+
+        this.logger.log(
+          `Environmental impact updated: CO2=${product.impactCO2}kg, Water=${product.impactWater}L`,
+        );
+      }
+
+      // Notify seller via WebSocket
       this.notificationsGateway.emitToUser(transaction.sellerId, 'payment:received', {
         transactionId,
         amount: transaction.amount,
@@ -195,7 +233,15 @@ export class PaymentsService {
       });
 
       // Send push notification to seller
-      // await this.pushService.sendPaymentNotification(...);
+      await this.pushService.sendPurchaseNotification(
+        transaction.sellerId,
+        transaction.buyer.displayName,
+        transaction.product.title,
+        transactionId,
+        transaction.amount || 0,
+      );
+
+      this.logger.log(`Payment approved notification sent to seller ${transaction.sellerId}`);
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
       await this.prisma.transaction.update({
         where: { id: transactionId },

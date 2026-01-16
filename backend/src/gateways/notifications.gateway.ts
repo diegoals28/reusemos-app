@@ -29,10 +29,6 @@ export interface NotificationPayload {
 }
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
   namespace: '/notifications',
 })
 export class NotificationsGateway

@@ -3,11 +3,15 @@
 // ============================================
 
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { SocketIoAdapter } from './adapters/socket-io.adapter';
+import { GlobalExceptionFilter } from './filters/http-exception.filter';
+
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,10 +19,25 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  // CORS configuration - parse comma-separated origins
+  const corsOrigin = configService.get('CORS_ORIGIN', '');
+  const allowedOrigins = corsOrigin
+    ? corsOrigin.split(',').map((o: string) => o.trim()).filter(Boolean)
+    : [];
+
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN', '*'),
+    origin: allowedOrigins.length > 0 ? allowedOrigins : false,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
+
+  // WebSocket adapter with CORS
+  app.useWebSocketAdapter(new SocketIoAdapter(app));
+
+  // Global exception filter
+  app.useGlobalFilters(new GlobalExceptionFilter(configService));
 
   // Global prefix
   app.setGlobalPrefix('api');
@@ -56,10 +75,13 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
   }
 
+  // Enable shutdown hooks
+  app.enableShutdownHooks();
+
   const port = configService.get('PORT', 3000);
   await app.listen(port);
 
-  console.log(`
+  logger.log(`
     ╔═══════════════════════════════════════════╗
     ║           Reusemos API SERVER                ║
     ╠═══════════════════════════════════════════╣
@@ -68,6 +90,25 @@ async function bootstrap() {
     ║  Environment: ${configService.get('NODE_ENV', 'development').padEnd(24)}║
     ╚═══════════════════════════════════════════╝
   `);
+
+  // Graceful shutdown handlers
+  const shutdown = async (signal: string) => {
+    logger.warn(`Received ${signal}, starting graceful shutdown...`);
+    try {
+      await app.close();
+      logger.log('Application closed gracefully');
+      process.exit(0);
+    } catch (error) {
+      logger.error('Error during shutdown', error);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  logger.error('Failed to start application', error);
+  process.exit(1);
+});

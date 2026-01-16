@@ -215,7 +215,8 @@ model User {
   devices               UserDevice[]
   offersBuyer           Offer[]             @relation("OfferBuyer")
   offersSeller          Offer[]             @relation("OfferSeller")
-  passwordResetTokens   PasswordResetToken[]
+  passwordResetTokens      PasswordResetToken[]
+  emailVerificationTokens  EmailVerificationToken[]
 
   @@index([email])
   @@index([username])
@@ -255,6 +256,22 @@ model PasswordResetToken {
   @@index([token])
   @@index([expiresAt])
 }
+
+model EmailVerificationToken {
+  id          String    @id @default(uuid())
+  userId      String
+  token       String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
 model UserDevice {
   id            String    @id @default(uuid())
   userId        String

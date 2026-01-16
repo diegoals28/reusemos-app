@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Development files
+.git
+.gitignore
+.vscode
+*.md
+*.log
+
+# Test files
+*.spec.ts
+*.test.ts
+__tests__
+coverage
+jest.config.js
+
+# Other
+.DS_Store
+Thumbs.db
+*.tmp

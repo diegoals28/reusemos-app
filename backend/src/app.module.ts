@@ -23,6 +23,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { BadgesModule } from './modules/badges/badges.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { HealthModule } from './modules/health/health.module';
 
 // WebSocket Gateways
 import { GatewaysModule } from './gateways/gateways.module';
@@ -64,6 +65,7 @@ import { GatewaysModule } from './gateways/gateways.module';
     BadgesModule,
     UploadsModule,
     ShippingModule,
+    HealthModule,
 
     // WebSocket Gateways
     GatewaysModule,
