@@ -13,11 +13,15 @@ import { usersApi } from '@/services/api';
 
 const categories = [
   { id: 'ropa', name: 'Ropa', icon: 'shirt-outline' },
-  { id: 'tech', name: 'Tech', icon: 'phone-portrait-outline' },
+  { id: 'tech', name: 'Tecnología', icon: 'phone-portrait-outline' },
   { id: 'hogar', name: 'Hogar', icon: 'home-outline' },
   { id: 'libros', name: 'Libros', icon: 'book-outline' },
   { id: 'deportes', name: 'Deportes', icon: 'football-outline' },
   { id: 'ninos', name: 'Niños', icon: 'happy-outline' },
+  { id: 'belleza', name: 'Belleza', icon: 'sparkles-outline' },
+  { id: 'vehiculos', name: 'Vehículos', icon: 'car-outline' },
+  { id: 'mascotas', name: 'Mascotas', icon: 'paw-outline' },
+  { id: 'musica', name: 'Música', icon: 'musical-notes-outline' },
 ];
 
 export default function OnboardingInterestsScreen() {
@@ -67,48 +71,48 @@ export default function OnboardingInterestsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>¿Qué te interesa encontrar?</Text>
         <Text style={styles.subtitle}>
-          Selecciona al menos 1 para personalizar tu experiencia
+          Selecciona las categorías que te interesan
         </Text>
 
-        {/* Categories Grid */}
-        <View style={styles.grid}>
+        {/* Categories Chips */}
+        <View style={styles.chipsContainer}>
           {categories.map((category) => {
             const isSelected = selected.includes(category.id);
             return (
               <TouchableOpacity
                 key={category.id}
                 style={[
-                  styles.categoryCard,
-                  isSelected && styles.categoryCardSelected,
+                  styles.chip,
+                  isSelected && styles.chipSelected,
                 ]}
                 onPress={() => toggleCategory(category.id)}
                 activeOpacity={0.7}
               >
-                <View style={[
-                  styles.iconContainer,
-                  isSelected && styles.iconContainerSelected,
-                ]}>
-                  <Ionicons
-                    name={category.icon as any}
-                    size={32}
-                    color={isSelected ? COLORS.primary : COLORS.textSecondary}
-                  />
-                </View>
+                <Ionicons
+                  name={category.icon as any}
+                  size={18}
+                  color={isSelected ? COLORS.white : COLORS.textSecondary}
+                />
                 <Text style={[
-                  styles.categoryName,
-                  isSelected && styles.categoryNameSelected,
+                  styles.chipText,
+                  isSelected && styles.chipTextSelected,
                 ]}>
                   {category.name}
                 </Text>
                 {isSelected && (
-                  <View style={styles.checkBadge}>
-                    <Ionicons name="checkmark" size={14} color={COLORS.white} />
-                  </View>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
                 )}
               </TouchableOpacity>
             );
           })}
         </View>
+
+        {/* Selected count */}
+        {selected.length > 0 && (
+          <Text style={styles.selectedCount}>
+            {selected.length} {selected.length === 1 ? 'categoría seleccionada' : 'categorías seleccionadas'}
+          </Text>
+        )}
       </ScrollView>
 
       {/* Buttons */}
@@ -116,14 +120,16 @@ export default function OnboardingInterestsScreen() {
         <Button
           title={saving ? 'Guardando...' : 'Continuar'}
           onPress={handleContinue}
-          disabled={selected.length === 0 || saving}
+          disabled={saving}
           loading={saving}
           fullWidth
           size="lg"
         />
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Saltar por ahora</Text>
-        </TouchableOpacity>
+        {selected.length === 0 && (
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+            <Text style={styles.skipText}>Saltar por ahora</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -158,7 +164,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: SPACING.base,
-    paddingTop: SPACING['2xl'],
+    paddingTop: SPACING.xl,
   },
   title: {
     fontSize: FONT_SIZES['2xl'],
@@ -171,60 +177,42 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: SPACING['2xl'],
+    marginBottom: SPACING.xl,
   },
-  grid: {
+  chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
-  categoryCard: {
-    width: '47%',
-    aspectRatio: 1.2,
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.lg,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+  chip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    gap: SPACING.xs,
   },
-  categoryCardSelected: {
-    backgroundColor: '#E8F5E9',
+  chipSelected: {
+    backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.sm,
-  },
-  iconContainerSelected: {
-    backgroundColor: '#C8E6C9',
-  },
-  categoryName: {
-    fontSize: FONT_SIZES.base,
+  chipText: {
+    fontSize: FONT_SIZES.sm,
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
-  categoryNameSelected: {
-    color: COLORS.primary,
-    fontWeight: '600',
+  chipTextSelected: {
+    color: COLORS.white,
   },
-  checkBadge: {
-    position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  selectedCount: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
+    textAlign: 'center',
+    marginTop: SPACING.lg,
+    fontWeight: '500',
   },
   footer: {
     padding: SPACING.base,

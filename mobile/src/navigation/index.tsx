@@ -3,10 +3,11 @@
 // ============================================
 
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet, Linking } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Linking, Platform } from 'react-native';
 import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { COLORS, ROUTES } from '@/constants';
@@ -152,6 +153,9 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // ============================================
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 10) : insets.bottom;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -161,8 +165,8 @@ function TabNavigator() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + bottomPadding,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
           paddingHorizontal: 10,
         },
